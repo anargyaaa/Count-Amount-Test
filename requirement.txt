@@ -1,0 +1,4 @@
+pytz==2026.2
+
+# Download the wheel from folder lib
+# spn-api-utilities @ file:./lib/spn_api_utilities-1.2.7-py3-none-any.whl
