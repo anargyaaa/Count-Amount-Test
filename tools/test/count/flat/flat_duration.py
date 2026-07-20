@@ -240,9 +240,7 @@ class FlatDurationTest:
         print(separator)
         print()
 
-    # ------------------------------------------------------------------ #
-    # Motor duration tests (1-14)
-    # ------------------------------------------------------------------ #
+    
     def _test_1(self):
         expectation = {
             "parking_price": 0,
@@ -495,9 +493,7 @@ class FlatDurationTest:
 
         return current_vehicle, time_in, time_out, price_payload, expectation
 
-    # ------------------------------------------------------------------ #
-    # Mobil duration tests (15-28)
-    # ------------------------------------------------------------------ #
+   
     def _test_15(self):
         expectation = {
             "parking_price": 0,
