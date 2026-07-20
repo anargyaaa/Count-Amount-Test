@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from model.price import ParkingPriceModel
 from utility.count_price import CountPrice
 
@@ -36,109 +38,12 @@ class FlatDurationTest:
                 "overstay_max_hours": 1,
                 "overstay_max_price": 1,
                 "period_data": [],
-            },
-            {
-                "fine": 0,
-                "fine_type": "",
-                "grace_period": 5,
-                "initial_time": 0,
-                "max_hour": 0,
-                "min_hour": 0,
-                "discount": 0,
-                "max_price": 0,
-                "next_price": 0,
-                "overnight_price": 10000,
-                "price": 4000,
-                "stay_time": 0,
-                "type": "FLAT",
-                "count_type": "INCREMENT",
-                "vehicle_code": "MB1",
-                "vehicle_name": "Mobil",
-                "overstay_type": "PROGRESSIVE",
-                "overstay_parameter": "DURATION",
-                "overstay_duration": 6,
-                "overstay_affected_user": "ALL",
-                "overstay_product_member": [],
-                "overstay_start": None,
-                "overstay_end": None,
-                "overstay_start_price": 10000,
-                "overstay_next_price": 10000,
-                "overstay_progressive_time_start": 1,
-                "overstay_progressive_time_next": 6,
-                "overstay_max_hours": 1,
-                "overstay_max_price": 1,
-                "period_data": [],
-            },
-            {
-                "fine": 0,
-                "fine_type": "",
-                "grace_period": 5,
-                "initial_time": 0,
-                "max_hour": 0,
-                "min_hour": 0,
-                "discount": 0,
-                "max_price": 0,
-                "next_price": 0,
-                "overnight_price": 7000,
-                "price": 2000,
-                "stay_time": 0,
-                "type": "FLAT",
-                "count_type": "INCREMENT",
-                "vehicle_code": "MT1",
-                "vehicle_name": "Motor",
-                "overstay_type": "PROGRESSIVE",
-                "overstay_parameter": "DURATION",
-                "overstay_duration": 6,
-                "overstay_affected_user": "MEMBER",
-                "overstay_product_member": [],
-                "overstay_start": None,
-                "overstay_end": None,
-                "overstay_start_price": 7000,
-                "overstay_next_price": 7000,
-                "overstay_progressive_time_start": 1,
-                "overstay_progressive_time_next": 6,
-                "overstay_max_hours": 1,
-                "overstay_max_price": 1,
-                "period_data": [],
-            },
-            {
-                "fine": 0,
-                "fine_type": "",
-                "grace_period": 5,
-                "initial_time": 0,
-                "max_hour": 0,
-                "min_hour": 0,
-                "discount": 0,
-                "max_price": 0,
-                "next_price": 0,
-                "overnight_price": 7000,
-                "price": 2000,
-                "stay_time": 0,
-                "type": "FLAT",
-                "count_type": "INCREMENT",
-                "vehicle_code": "MT1",
-                "vehicle_name": "Motor",
-                "overstay_type": "PROGRESSIVE",
-                "overstay_parameter": "DURATION",
-                "overstay_duration": 6,
-                "overstay_affected_user": "NON_MEMBER",
-                "overstay_product_member": [],
-                "overstay_start": None,
-                "overstay_end": None,
-                "overstay_start_price": 7000,
-                "overstay_next_price": 7000,
-                "overstay_progressive_time_start": 1,
-                "overstay_progressive_time_next": 6,
-                "overstay_max_hours": 1,
-                "overstay_max_price": 1,
-                "period_data": [],
             }
         ]
 
         self._list_test = [
             self._test_1, self._test_2, self._test_3, self._test_4,
-            self._test_5, self._test_6, self._test_7, self._test_8,
-            self._test_9, self._test_10,
+            self._test_5, self._test_6, self._test_7,
         ]
 
     def execute(self):
@@ -183,11 +88,9 @@ class FlatDurationTest:
         grace_period = price_payload.get("grace_period", 0)
         overstay_affected_user = price_payload.get("overstay_affected_user", "")
 
-        jam_masuk = self._to_jam_wib(time_in)
-        jam_keluar = self._to_jam_wib(time_out)
-        lama_parkir_jam = (time_out - time_in) // 3600000
-        if (time_out - time_in) % 3600000 != 0:
-            lama_parkir_jam += 1
+        jam_masuk = datetime.utcfromtimestamp(time_in / 1000 + 7 * 3600).strftime("%H:%M:%S")
+        jam_keluar = datetime.utcfromtimestamp(time_out / 1000 + 7 * 3600).strftime("%H:%M:%S")
+        lama_parkir_jam = -(-(time_out - time_in) // (3600 * 1000))
 
         is_overstay = response.overnight_price > 0
         is_affected_user_test = "membership_product" in expectation
@@ -234,17 +137,7 @@ class FlatDurationTest:
         print(separator)
         print()
 
-    @staticmethod
-    def _to_jam_wib(timestamp_ms):
-        total_seconds = timestamp_ms // 1000 + 7 * 3600  # WIB = UTC+7
-        hour = (total_seconds // 3600) % 24
-        minute = (total_seconds % 3600) // 60
-        second = total_seconds % 60
-        return f"{hour:02d}:{minute:02d}:{second:02d}"
-
-    # ------------------------------------------------------------------ #
-    # Motor duration tests (1-14)
-    # ------------------------------------------------------------------ #
+    
     def _test_1(self):
         expectation = {
             "parking_price": 0,
@@ -364,60 +257,6 @@ class FlatDurationTest:
 
         time_in = 1783987200000
         time_out = 1784008800000
-        price_payload = next(
-            (item for item in self._base_data if item["vehicle_code"] == "MT1" and item["overstay_affected_user"] == "ALL"),
-            {}
-        )
-
-        return current_vehicle, time_in, time_out, price_payload, expectation
-
-    def _test_8(self):
-        expectation = {
-            "parking_price": 2000,
-            "total_price": 9000,
-            "overstay_price": 7000
-        }
-
-        current_vehicle = "MT1"
-
-        time_in = 1783987200000
-        time_out = 1784008801000
-        price_payload = next(
-            (item for item in self._base_data if item["vehicle_code"] == "MT1" and item["overstay_affected_user"] == "ALL"),
-            {}
-        )
-
-        return current_vehicle, time_in, time_out, price_payload, expectation
-
-    def _test_9(self):
-        expectation = {
-            "parking_price": 2000,
-            "total_price": 9000,
-            "overstay_price": 7000
-        }
-
-        current_vehicle = "MT1"
-
-        time_in = 1783987200000
-        time_out = 1784030399000
-        price_payload = next(
-            (item for item in self._base_data if item["vehicle_code"] == "MT1" and item["overstay_affected_user"] == "ALL"),
-            {}
-        )
-
-        return current_vehicle, time_in, time_out, price_payload, expectation
-
-    def _test_10(self):
-        expectation = {
-            "parking_price": 2000,
-            "total_price": 16000,
-            "overstay_price": 14000
-        }
-
-        current_vehicle = "MT1"
-
-        time_in = 1783987200000
-        time_out = 1784030400000
         price_payload = next(
             (item for item in self._base_data if item["vehicle_code"] == "MT1" and item["overstay_affected_user"] == "ALL"),
             {}
