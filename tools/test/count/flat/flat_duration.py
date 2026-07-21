@@ -2,6 +2,7 @@ from datetime import datetime
 
 from model.price import ParkingPriceModel
 from utility.count_price import CountPrice
+from utility.log import TestLogger
 
 
 class FlatDurationTest:
@@ -207,38 +208,43 @@ class FlatDurationTest:
         parking_display = "Grace" if is_grace else expectation["parking_price"]
         total_display = "Grace" if is_grace else expectation["total_price"]
 
-        print(separator)
-        print(f"{'RESULT TEST':^79}")
-        print(separator)
-        print(f"Test Name        : {test_name}")
-        print(f"Vehicle          : {vehicle_name} ({current_vehicle})")
-        print(f"Grace Time       : {grace_period} Menit")
+        affected_user = (
+f"Affected User    : {overstay_affected_user}\n"
+f"User             : {'Member' if membership_product else 'Casual'}\n"
+if is_affected_user_test
+else ""
+)
 
-        if is_affected_user_test:
-            print(f"Affected User    : {overstay_affected_user}")
-            print(f"User             : {'Member' if membership_product else 'Casual'}")
+        TestLogger.log(f"""
+\n
+{separator}
+{'RESULT TEST':^79}
+{separator}
+Test Name        : {test_name}
+Vehicle          : {vehicle_name} ({current_vehicle})
+Grace Time       : {grace_period} Menit
+{affected_user}
+Jam Masuk        : {jam_masuk}
+Jam Keluar       : {jam_keluar}
+Lama Parkir      : {lama_parkir_jam} Jam
+Is Overstay      : {'TRUE' if is_overstay else 'FALSE'}
 
-        print()
-        print(f"Jam Masuk        : {jam_masuk}")
-        print(f"Jam Keluar       : {jam_keluar}")
-        print(f"Lama Parkir      : {lama_parkir_jam} Jam")
-        print(f"Is Overstay      : {'TRUE' if is_overstay else 'FALSE'}")
-        print()
-        print("Parking Price")
-        print(f"    Expected     : {parking_display}")
-        print(f"    Calculated   : {response.parking_price}")
-        print()
-        print("Overstay Price")
-        print(f"    Expected     : {expectation['overstay_price']}")
-        print(f"    Calculated   : {response.overnight_price}")
-        print()
-        print("Total Price")
-        print(f"    Expected     : {total_display}")
-        print(f"    Calculated   : {response.total_amount}")
-        print()
-        print(f"Status           : {'PASSED' if passed else 'FAILED'}")
-        print(separator)
-        print()
+Parking Price
+    Expected     : {parking_display}
+    Calculated   : {response.parking_price}
+
+Overstay Price
+    Expected     : {expectation['overstay_price']}
+    Calculated   : {response.overnight_price}
+
+Total Price
+    Expected     : {total_display}
+    Calculated   : {response.total_amount}
+
+Status           : {'PASSED' if passed else 'FAILED'}
+{separator}
+\n
+""")
 
     
     def _test_1(self):
