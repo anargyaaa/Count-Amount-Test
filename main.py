@@ -28,6 +28,9 @@ def get_app(app):
     if app == "manual_input":
         return _ManualInteractiveApp()
 
+    if app == "membership_test":
+        return _MembershipApp()
+
     return False
 
 
@@ -47,6 +50,14 @@ class _ManualInteractiveApp:
     def execute(self):
         FlatDurationTest().execute_interactive()
 
-# Run the file
+
+class _MembershipApp:
+    """Wrapper kecil untuk `membership_test` - test kombinasi
+    Affected User & User (Member/Casual) dari file CSV."""
+
+    def execute(self):
+        FlatDurationTest().execute_membership()
+
+
 if __name__ == "__main__":
     main()

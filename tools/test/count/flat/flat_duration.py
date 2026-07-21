@@ -11,9 +11,18 @@ class FlatDurationTest:
     INPUT_PATH = os.path.join("data", "manual_test_data.csv")
     OUTPUT_PATH = os.path.join("data", "manual_test_result.csv")
 
+    MEMBERSHIP_INPUT_PATH = os.path.join("data", "membership_test_data.csv")
+    MEMBERSHIP_OUTPUT_PATH = os.path.join("data", "membership_test_result.csv")
+
     VEHICLE_CODE_ALIASES = {
         "MT": "MT1",
         "MB": "MB1",
+    }
+    AFFECTED_USER_ALIASES = {
+        "ALL": "ALL",
+        "MEMBER": "MEMBER",
+        "CASUAL": "NON_MEMBER",
+        "NON_MEMBER": "NON_MEMBER",
     }
 
     def __init__(self):
@@ -219,6 +228,7 @@ class FlatDurationTest:
         while True:
             row = self._prompt_manual_row()
             if row is None:
+                # User membatalkan input baris ini (misal input kosong berulang)
                 continue
 
             result = self._process_manual_row(index, row)
@@ -440,6 +450,176 @@ class FlatDurationTest:
             "overstay_price", "total_amount", "hasil", "keterangan",
         ]
         with open(self.OUTPUT_PATH, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            for r in results:
+                writer.writerow({k: r[k] for k in fieldnames})
+
+    def execute_membership(self):
+        rows = self._read_membership_input(self.MEMBERSHIP_INPUT_PATH)
+        if not rows:
+            print(f"Tidak ada data pada {self.MEMBERSHIP_INPUT_PATH}")
+            return
+
+        results = [self._process_membership_row(index, row) for index, row in enumerate(rows, start=1)]
+
+        for r in results:
+            self._print_membership_result(r)
+
+        self._write_membership_output(results)
+
+        total = len(results)
+        total_passed = sum(1 for r in results if r["hasil"] == "PASSED")
+        print(f"{total_passed}/{total} baris data PASSED.")
+        print(f"Hasil lengkap disimpan di: {self.MEMBERSHIP_OUTPUT_PATH}")
+
+    def _resolve_affected_user(self, affected_user_input: str) -> str:
+        key = (affected_user_input or "").strip().upper()
+        resolved = self.AFFECTED_USER_ALIASES.get(key)
+        if resolved is None:
+            known = ", ".join(sorted(self.AFFECTED_USER_ALIASES.keys()))
+            raise ValueError(
+                f"Affected User '{affected_user_input}' tidak dikenali. Pilihan: {known}"
+            )
+        return resolved
+
+    def _resolve_is_member(self, user_input: str) -> bool:
+        key = (user_input or "").strip().upper()
+        if key in ("MEMBER",):
+            return True
+        if key in ("CASUAL", "NON_MEMBER", ""):
+            return False
+        raise ValueError(
+            f"User '{user_input}' tidak dikenali. Pilihan: Member, Casual"
+        )
+
+    def _read_membership_input(self, path):
+        if not os.path.exists(path):
+            print(f"File input tidak ditemukan: {path}")
+            print("Buat file CSV dengan kolom: vehicle,affected_user,jam_masuk,jam_keluar,user,expected_total")
+            return []
+
+        with open(path, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            return [row for row in reader]
+
+    def _process_membership_row(self, index, row):
+        vehicle_input = row.get("vehicle", "")
+        affected_user_input = row.get("affected_user", "")
+        jam_masuk_str = row.get("jam_masuk", "")
+        jam_keluar_str = row.get("jam_keluar", "")
+        user_input = row.get("user", "")
+        expected_total_str = (row.get("expected_total") or "").strip()
+
+        try:
+            base_payload = self._get_price_payload(vehicle_input)
+            affected_user = self._resolve_affected_user(affected_user_input)
+            is_member = self._resolve_is_member(user_input)
+
+            price_payload = dict(base_payload)
+            price_payload["overstay_affected_user"] = affected_user
+
+            time_in = self._parse_datetime_to_epoch_ms(jam_masuk_str)
+            time_out = self._parse_datetime_to_epoch_ms(jam_keluar_str)
+
+            count_price = CountPrice(
+                time_in=time_in,
+                time_out=time_out,
+                price_payload=price_payload,
+                membership_product="MEMBER" if is_member else "",
+                current_vehicle=price_payload["vehicle_code"],
+            )
+            response: ParkingPriceModel = count_price.execute()
+
+            parking_price = response.parking_price
+            overstay_price = response.overnight_price
+            total_amount = response.total_amount
+            is_overstay = "TRUE" if overstay_price > 0 else "FALSE"
+            lama_jam = round((time_out - time_in) / (1000 * 60 * 60), 2)
+
+            if expected_total_str != "":
+                try:
+                    expected_total = int(expected_total_str)
+                except ValueError:
+                    return self._failed_membership_row(
+                        index, vehicle_input, affected_user_input, jam_masuk_str,
+                        jam_keluar_str, user_input,
+                        f"expected_total '{expected_total_str}' bukan angka yang valid"
+                    )
+                konsisten = total_amount == expected_total
+                keterangan = "" if konsisten else f"Expected={expected_total}, Calculated={total_amount}"
+            else:
+                konsisten = True
+                keterangan = ""
+
+            hasil = "PASSED" if konsisten else "FAILED"
+
+            return {
+                "no": index,
+                "vehicle": f"{price_payload['vehicle_name']} ({price_payload['vehicle_code']})",
+                "affected_user": affected_user,
+                "jam_masuk": jam_masuk_str,
+                "jam_keluar": jam_keluar_str,
+                "lama_jam": lama_jam,
+                "user": "Member" if is_member else "Casual",
+                "parking_price": parking_price,
+                "overstay_price": overstay_price,
+                "total_amount": total_amount,
+                "hasil": hasil,
+                "keterangan": keterangan,
+            }
+
+        except Exception as e:
+            return self._failed_membership_row(
+                index, vehicle_input, affected_user_input, jam_masuk_str, jam_keluar_str, user_input, str(e)
+            )
+
+    def _failed_membership_row(self, index, vehicle_input, affected_user_input, jam_masuk_str, jam_keluar_str, user_input, keterangan):
+        return {
+            "no": index,
+            "vehicle": vehicle_input,
+            "affected_user": affected_user_input,
+            "jam_masuk": jam_masuk_str,
+            "jam_keluar": jam_keluar_str,
+            "lama_jam": "-",
+            "user": user_input,
+            "parking_price": "-",
+            "overstay_price": "-",
+            "total_amount": "-",
+            "hasil": "FAILED",
+            "keterangan": keterangan,
+        }
+
+    def _print_membership_result(self, r):
+        print("=" * 60)
+        print("                 RESULT TEST (MEMBERSHIP)")
+        print("=" * 60)
+        print(f"No                 : {r['no']}")
+        print(f"Vehicle            : {r['vehicle']}")
+        print(f"Affected User      : {r['affected_user']}")
+        print(f"User               : {r['user']}")
+        print()
+        print(f"Jam Masuk          : {r['jam_masuk']}")
+        print(f"Jam Keluar         : {r['jam_keluar']}")
+        print(f"Lama Parkir        : {r['lama_jam']} Jam")
+        print()
+        print(f"Parking Price      : {r['parking_price']}")
+        print(f"Overstay Price     : {r['overstay_price']}")
+        print(f"Total Price        : {r['total_amount']}")
+        print(f"\nStatus             : {r['hasil']}")
+        if r["keterangan"]:
+            print(f"Keterangan         : {r['keterangan']}")
+        print("=" * 60)
+        print()
+
+    def _write_membership_output(self, results):
+        os.makedirs(os.path.dirname(self.MEMBERSHIP_OUTPUT_PATH), exist_ok=True)
+        fieldnames = [
+            "no", "vehicle", "affected_user", "jam_masuk", "jam_keluar",
+            "lama_jam", "user", "parking_price",
+            "overstay_price", "total_amount", "hasil", "keterangan",
+        ]
+        with open(self.MEMBERSHIP_OUTPUT_PATH, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             for r in results:

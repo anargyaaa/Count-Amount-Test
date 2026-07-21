@@ -1,0 +1,7 @@
+vehicle,affected_user,jam_masuk,jam_keluar,user,expected_total
+MT,ALL,2026-07-20 07:00:00,2026-07-20 13:00:00,Member,7000
+MT,ALL,2026-07-20 07:00:00,2026-07-20 13:00:00,Casual,9000
+MT,Member,2026-07-20 07:00:00,2026-07-20 13:00:00,Member,7000
+MT,Member,2026-07-20 07:00:00,2026-07-20 13:00:00,Casual,2000
+MT,Casual,2026-07-20 07:00:00,2026-07-20 13:00:00,Member,0
+MT,Casual,2026-07-20 07:00:00,2026-07-20 13:00:00,Casual,9000

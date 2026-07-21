@@ -1,0 +1,7 @@
+no,vehicle,affected_user,jam_masuk,jam_keluar,lama_jam,user,parking_price,overstay_price,total_amount,hasil,keterangan
+1,Motor (MT1),ALL,2026-07-20 07:00:00,2026-07-20 13:00:00,6.0,Member,0,7000,7000,PASSED,
+2,Motor (MT1),ALL,2026-07-20 07:00:00,2026-07-20 13:00:00,6.0,Casual,2000,7000,9000,PASSED,
+3,Motor (MT1),MEMBER,2026-07-20 07:00:00,2026-07-20 13:00:00,6.0,Member,0,7000,7000,PASSED,
+4,Motor (MT1),MEMBER,2026-07-20 07:00:00,2026-07-20 13:00:00,6.0,Casual,2000,0,2000,PASSED,
+5,Motor (MT1),NON_MEMBER,2026-07-20 07:00:00,2026-07-20 13:00:00,6.0,Member,0,0,0,PASSED,
+6,Motor (MT1),NON_MEMBER,2026-07-20 07:00:00,2026-07-20 13:00:00,6.0,Casual,2000,7000,9000,PASSED,
