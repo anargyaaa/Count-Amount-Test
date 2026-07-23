@@ -228,7 +228,6 @@ class FlatDurationTest:
         while True:
             row = self._prompt_manual_row()
             if row is None:
-                # User membatalkan input baris ini (misal input kosong berulang)
                 continue
 
             result = self._process_manual_row(index, row)
