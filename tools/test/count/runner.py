@@ -11,5 +11,4 @@ class RunnerTestCount:
     def execute(self):
         for list_type_test in self._list_test:
             list_type_test.execute()
-            # Add delay per test
             sleep(1)
