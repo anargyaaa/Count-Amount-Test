@@ -2,6 +2,7 @@ import sys
 
 from tools.test.count.runner import RunnerTestCount
 from tools.test.count.flat.flat_duration import FlatDurationTest
+from tools.test.count.flat.flat_range import FlatRangeTest
 
 
 def main():
@@ -30,6 +31,9 @@ def get_app(app):
 
     if app == "membership_test":
         return _MembershipApp()
+
+    if app == "flatrange_test":
+        return FlatRangeTest()
 
     return False
 
